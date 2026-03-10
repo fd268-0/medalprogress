@@ -231,7 +231,6 @@ bool UpdateCurrentPb() {
 }
 
 void UpdateMedals() {
-	times = {};
 	auto app = cast<CTrackMania>(GetApp());
 	auto track = app.RootMap;
 	if (track !is null) {
@@ -242,6 +241,7 @@ void UpdateMedals() {
 			times.InsertLast({{"Icon", "\\$00f" + Icons::Trophy},{"Time", wr_time}});
 		}
 		auto mapInfo = track.MapInfo;
+		times = {};
 		times.InsertLast({{"Icon", "\\$900" + Icons::CircleO},{"Time", mapInfo.TMObjective_BronzeTime}});
 		times.InsertLast({{"Icon", "\\$999" + Icons::CircleO},{"Time", mapInfo.TMObjective_SilverTime}});
 		times.InsertLast({{"Icon", "\\$fc0" + Icons::DotCircleO},{"Time", mapInfo.TMObjective_GoldTime}});
@@ -257,6 +257,7 @@ void UpdateMedals() {
 		wr_time = -2;
 		unbeatenAt = false;
 		lastPb = -2;
+		times = {};
 	}
 }
 
@@ -297,5 +298,3 @@ void Render() {
 	}
 	displayPbBar();
 }
-
-
