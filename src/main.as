@@ -90,7 +90,17 @@ void displayPbBar() {
 	}
 	YPosition = Math::Clamp(YPosition, 0, Display::GetHeight());
 
+
 	if ((track !is null || UI::IsOverlayShown() == true) && Enabled == true) {
+		if (track !is null) {
+			auto challengeParams = track.ChallengeParameters;
+			if (! string(challengeParams.MapType).Contains('TM_Race')) {
+				if (Enabled == true && UI::IsOverlayShown() == true) {
+					RenderBoxCentered(vec2(width/2,yPos), vec2(272,36), vec4(0,0,0,0.5));
+				}
+				return;
+			}
+		}
 		RenderBoxCentered(vec2(width/2,yPos), vec2(272,36), vec4(0,0,0,0.5));
 	}
 	if (track is null || Enabled == false) {
