@@ -2,7 +2,8 @@
 name        = "Topbar"
 author      = "fd268"
 category    = "Race"
-version     = "1.0.0"
+version     = "0.1.0"
 [script]
 dependencies = [ "NadeoServices" ]
-optional_dependencies = [ "ChampionMedals","WarriorMedals" ]
+
+optional_dependencies = [ "ChampionMedals","WarriorMedals","mapinfo" ]
