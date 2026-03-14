@@ -1,3 +1,11 @@
+class PMedal {
+
+    int Time;
+    string Description;
+    string Name;
+    string Icon;
+}
+
 namespace StatHandler {
     dictionary possibleMedals = {
         {"Bronze",("\\$900" + Icons::CircleO)},
@@ -89,7 +97,6 @@ namespace StatHandler {
         return false;
     }
 
-
     void AddItemToTime(const string name, const int time) {
         int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
         int settingForName = int(SettingHandler::jsonSettings["mdl_"+name]);
@@ -102,7 +109,11 @@ namespace StatHandler {
         if (settingForName == 3 && fixedCurPb <= time) {
             return;
         }
-        times.InsertLast({{"Icon", string(possibleMedals[name])},{"Time", time},{"Name",name}});
+        PMedal item;
+        item.Time = time;
+        item.Name = name;
+        item.Icon = string(possibleMedals[name]);
+        times.InsertLast(item);
     }
 
 
@@ -144,18 +155,22 @@ namespace StatHandler {
         }
     }
 
-    array<dictionary> GetCurPbMedal() {
-        dictionary curPbMedal = {{"Icon","\\$000"},{"Time",999999999}};
-        dictionary nextPbMedal = {{"Icon","\\$000"},{"Time",0}};
+    array<PMedal> GetCurPbMedal() {
+        PMedal curPbMedal;
+        curPbMedal.Time = 999999999;
+        curPbMedal.Icon = "\\$000";
+        PMedal nextPbMedal;
+        nextPbMedal.Time = 0;
+        nextPbMedal.Icon = "\\$000";
         int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
         for (uint i = 0; i < times.Length; i++) {
-            if (fixedCurPb <= int(times[i]["Time"])) {
-                if (int(times[i]["Time"]) <= int(curPbMedal["Time"])) {
+            if (fixedCurPb <= int(times[i].Time)) {
+                if (int(times[i].Time) <= int(curPbMedal.Time)) {
                     curPbMedal = times[i];
                 }
             }
-            if (fixedCurPb > int(times[i]["Time"])) {
-                if (int(times[i]["Time"]) > int(nextPbMedal["Time"])) {
+            if (fixedCurPb > int(times[i].Time)) {
+                if (int(times[i].Time) > int(nextPbMedal.Time)) {
                     nextPbMedal = times[i];
                 }
             }
