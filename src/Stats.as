@@ -1,10 +1,27 @@
 class PMedal {
 
+    vec4 GetColorOfMedal() {
+        return Text::ParseHexColor("#" + string(Icon).SubStr(2,1) + "0" + string(Icon).SubStr(3,1) + "0" + string(Icon).SubStr(4,1) + "0ff");;
+    }
+
+    float GetBarPosition() {
+        int actualDBS = Math::Min(SettingHandler::DisplayBarSize, SettingHandler::XSize);
+        int xPosition = Math::Min(Math::Max(SettingHandler::XSize*2*BarDisplayPosition, actualDBS/2), SettingHandler::XSize*2-actualDBS/2);
+        return xPosition;
+    }
+
+    void SetBarPosition(const int position) {
+        float xPosition = float(position)/2/SettingHandler::XSize;
+        BarDisplayPosition = xPosition;
+    }
+
     int Time;
     string Description;
     string Name;
     string Icon;
     int Order;
+    bool BarDisplay;
+    float BarDisplayPosition;
 }
 
 namespace StatHandler {
@@ -99,8 +116,15 @@ namespace StatHandler {
     }
 
     void AddItemToTime(const string name, const int time) {
-        int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
+         int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
         int settingForName = int(SettingHandler::jsonSettings["mdl_"+name]);
+        int barDispSetting = int(SettingHandler::jsonSettings["mdl_"+name+"_bar"]);
+        PMedal item;
+        item.Time = time;
+        item.Name = name;
+        item.BarDisplay = (barDispSetting == 0) ? false : true;
+        item.Icon = string(possibleMedals[name]);
+        allTimes.InsertLast(item);
         if (settingForName == 1) {
             return;
         }
@@ -110,10 +134,6 @@ namespace StatHandler {
         if (settingForName == 3 && fixedCurPb <= time) {
             return;
         }
-        PMedal item;
-        item.Time = time;
-        item.Name = name;
-        item.Icon = string(possibleMedals[name]);
         times.InsertLast(item);
     }
 
@@ -129,6 +149,7 @@ namespace StatHandler {
             } 
             auto mapInfo = track.MapInfo;
             times = {};
+            allTimes = {};
             if (wr_time > 0) {
                 //times.InsertLast({{"Icon", "\\$00f" + Icons::Trophy},{"Time", wr_time}});
                 AddItemToTime("World Record", wr_time);
@@ -148,6 +169,10 @@ namespace StatHandler {
             AddItemToTime("Worst Time", mapInfoPlg.WorstTime);
 #endif
 
+            allTimes.Sort(function(a,b) {
+                return a.Time < b.Time;
+            });
+
         } else {
             wr_time = -2;
             unbeatenAt = false;
@@ -156,6 +181,21 @@ namespace StatHandler {
         }
     }
 
+    array<PMedal> GetVisiblePMedals() {
+        array<PMedal> visiblePMedals = {};
+        array<PMedal> curPMedals = GetCurPbMedal();
+        if (curPMedals[1].Time <= 0) {
+            return {};
+        }
+        for (uint i = 0; i < allTimes.Length; i++) {
+            int barDispSetting = int(SettingHandler::jsonSettings["mdl_"+allTimes[i].Name+"_bar"]);
+            if (allTimes[i].Time < curPMedals[0].Time && allTimes[i].Time > curPMedals[1].Time && barDispSetting == 1) {
+                allTimes[i].BarDisplayPosition = float(allTimes[i].Time - curPMedals[0].Time) / float(curPMedals[1].Time - curPMedals[0].Time);
+                visiblePMedals.InsertLast(allTimes[i]);
+            }
+        }
+        return visiblePMedals;
+    }
     array<PMedal> GetCurPbMedal() {
         PMedal curPbMedal;
         curPbMedal.Time = 999999999;
