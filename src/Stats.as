@@ -4,9 +4,9 @@ class PMedal {
         return Text::ParseHexColor("#" + string(Icon).SubStr(2,1) + "0" + string(Icon).SubStr(3,1) + "0" + string(Icon).SubStr(4,1) + "0ff");;
     }
 
-    float GetBarPosition() {
+    int GetBarPosition() {
         int actualDBS = Math::Min(SettingHandler::DisplayBarSize, SettingHandler::XSize);
-        int xPosition = Math::Min(Math::Max(SettingHandler::XSize*2*BarDisplayPosition, actualDBS/2), SettingHandler::XSize*2-actualDBS/2);
+        int xPosition = int(Math::Min(Math::Max(SettingHandler::XSize*2*BarDisplayPosition, actualDBS/2), SettingHandler::XSize*2-actualDBS/2));
         return xPosition;
     }
 
@@ -44,12 +44,17 @@ namespace StatHandler {
 
 
     int getTimeAtPos(const int position) {
-        if (position > 10000) {
+        if (position > 10000 || position < 1) {
+            warn("Position invalid for request.");
             return -1;
         }
-
         auto app = cast<CTrackMania>(GetApp());
         auto track = app.RootMap;
+
+        if (app.RootMap is null) {
+            warn("Tried to get a time when no map was avaliable.");
+            return -2;
+        }
 
 
         NadeoServices::AddAudience("NadeoLiveServices");
@@ -66,6 +71,7 @@ namespace StatHandler {
         }
         int time = -1;
         if (app.RootMap is null) {
+            warn("No map is avaliable to update the record for.");
             return -2;
         }
         auto mapInfo = track.MapInfo;
