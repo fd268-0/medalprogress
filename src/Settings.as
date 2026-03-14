@@ -7,11 +7,18 @@ namespace SettingHandler {
 
 dictionary jsonSettings = {};
 
-[Setting name="Enabled Bar" category="Display"]
+
+[Setting name="Bar Enabled" category="Display" description="Hides the bar, but not the customization part of the bar."]
 bool Enabled = true;
+
+[Setting name="Customization Buttons Enabled" category="Display" description="Hides the customization buttons on the sides of the bar."]
+bool CustomizationEnabled = true;
 
 [Setting name="Hide Customization In Menu" category="Display"]
 bool HideCustInMenu = true;
+
+[Setting name="High Contrast Text Display" category="Display" description="Displays the background as the opposite color of the text."]
+bool AccessableText = false;
 
 [Setting name="Unbeaten AT Display" category="Display"]
 bool UATDisplay = false;
