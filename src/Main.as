@@ -202,15 +202,15 @@ void displayPbBar() {
 	int actualDBS = Math::Min(SettingHandler::DisplayBarSize, SettingHandler::XSize);
 	if (actualDBS > 0 && visiblePMedals.Length > 0) {
 		if (SettingHandler::DisplayPreventOverlap) {
-			for (int i = 0; i < visiblePMedals.Length; i++) {
+			for (int i = 0; i < int(visiblePMedals.Length); i++) {
 				
 				if (i > 0 && (visiblePMedals[i-1].GetBarPosition()-visiblePMedals[i].GetBarPosition()) < actualDBS) {
-					visiblePMedals[i].SetBarPosition(visiblePMedals[i-1].GetBarPosition()-actualDBS);
+					visiblePMedals[i].SetBarPosition(int(visiblePMedals[i-1].GetBarPosition())-actualDBS);
 				}
 			}
 		}
 		for (int i = visiblePMedals.Length-1; i >= 0; i--) {
-			int xPosition = Math::Min(Math::Max(SettingHandler::XSize*2*visiblePMedals[i].BarDisplayPosition, actualDBS/2), SettingHandler::XSize*2-actualDBS/2);
+			int xPosition = visiblePMedals[i].GetBarPosition();
 			vec4 vcol = visiblePMedals[i].GetColorOfMedal();
 			vec2 vpos = vec2(width/2-SettingHandler::XSize+xPosition,yPos);
 			vcol.w = 0.5;
