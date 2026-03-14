@@ -1,4 +1,5 @@
 array<PMedal> times = {};
+array<PMedal> allTimes = {};
 int currentPb = 0;
 int wr_time = -2;
 int lastPbUpdate = -1000;
@@ -68,8 +69,8 @@ void displayPbBar() {
 	nvg::FontFace(font);
 	nvg::FontSize(20);
 	array<PMedal> medalGoals = StatHandler::GetCurPbMedal();
-	vec4 c1 = Text::ParseHexColor("#" + string(medalGoals[0].Icon).SubStr(2,1) + "0" + string(medalGoals[0].Icon).SubStr(3,1) + "0" + string(medalGoals[0].Icon).SubStr(4,1) + "0ff");
-	vec4 c2 = Text::ParseHexColor("#" + string(medalGoals[1].Icon).SubStr(2,1) + "0" + string(medalGoals[1].Icon).SubStr(3,1) + "0" + string(medalGoals[1].Icon).SubStr(4,1) + "0ff");
+	vec4 c1 = medalGoals[0].GetColorOfMedal();
+	vec4 c2 = medalGoals[1].GetColorOfMedal();
 	float delta = float(currentPb) - float(medalGoals[1].Time);
 	float l = ((float(currentPb) - float(medalGoals[0].Time)) / (float(medalGoals[1].Time) - float(medalGoals[0].Time)));
 	if (currentPb <= 0) {
@@ -196,6 +197,38 @@ void displayPbBar() {
 	if (bsr && currentPb > 0 && int(medalGoals[1].Time) > 0) {
 		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), "+" + Time::Format(int(delta), true), lerpVec, vec4(0,0,0,0.5));
 		cpos += 24;
+	}
+	array<PMedal> visiblePMedals = StatHandler::GetVisiblePMedals();
+	int actualDBS = Math::Min(SettingHandler::DisplayBarSize, SettingHandler::XSize);
+	if (actualDBS > 0 && visiblePMedals.Length > 0) {
+		if (SettingHandler::DisplayPreventOverlap) {
+			for (int i = 0; i < visiblePMedals.Length; i++) {
+				
+				if (i > 0 && (visiblePMedals[i-1].GetBarPosition()-visiblePMedals[i].GetBarPosition()) < actualDBS) {
+					visiblePMedals[i].SetBarPosition(visiblePMedals[i-1].GetBarPosition()-actualDBS);
+				}
+			}
+		}
+		for (int i = visiblePMedals.Length-1; i >= 0; i--) {
+			int xPosition = Math::Min(Math::Max(SettingHandler::XSize*2*visiblePMedals[i].BarDisplayPosition, actualDBS/2), SettingHandler::XSize*2-actualDBS/2);
+			vec4 vcol = visiblePMedals[i].GetColorOfMedal();
+			vec2 vpos = vec2(width/2-SettingHandler::XSize+xPosition,yPos);
+			vcol.w = 0.5;
+			if (currentPb < visiblePMedals[i].Time && SettingHandler::DisplayBarTA) {
+				vcol.w = 0.1;
+			}
+			if (actualDBS >= 20) {
+				vec4 vtcol = vcol;
+				vtcol.w = vtcol.w * 2;
+				RenderTextCentered(vpos, Text::StripOpenplanetFormatCodes(string(visiblePMedals[i].Icon)), vtcol);
+			}
+			if (RenderBoxCentered(vpos, vec2(actualDBS,30), vcol)) {
+				RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(int(visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
+				cpos += 24;
+				RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), (currentPb-visiblePMedals[i].Time > 0 ? "+" : "") + Time::Format(int(currentPb-visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
+				cpos += 24;
+			}
+		}
 	}
 	if (unbeatenAt == true && SettingHandler::UATDisplay) {
 		string text = "Unbeaten AT";
