@@ -4,6 +4,7 @@ class PMedal {
     string Description;
     string Name;
     string Icon;
+    int Order;
 }
 
 namespace StatHandler {
