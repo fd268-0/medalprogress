@@ -32,13 +32,20 @@ bool RenderBoxCentered(const vec2 pos, const vec2 size, const vec4 color, const 
 	return UI::IsMouseHoveringRect(pos-(size/2), pos+(size/2), false);
 }
 
-vec2 RenderTextBoxCentered(const vec2 pos, const string text, const vec4 txCol, vec4 bgCol) {
+vec2 RenderTextBoxCentered(const vec2 pos, const string text, vec4 txCol, vec4 bgCol) {
 	vec2 tbounds = nvg::TextBounds(text);
 	vec2 boxBounds = vec2(tbounds.x+6,24);
+
+	if (SettingHandler::AccessableText == true) {
+		bgCol = vec4(Math::Abs(txCol.x-1),Math::Abs(txCol.y-1),Math::Abs(txCol.z-1),bgCol.w);
+	}
+
 	vec3 txColBg = UI::ToHSV(txCol.x, txCol.y, txCol.z);
 	vec3 hsvBg = UI::ToHSV(bgCol.x, bgCol.y, bgCol.z);
-	if (txColBg.z < 0.3 && hsvBg.z < 0.3) {
-		hsvBg.z += 0.7;
+	if (SettingHandler::AccessableText == false) {
+		if (txColBg.z < 0.3 && hsvBg.z < 0.3) {
+			hsvBg.z += 0.7;
+		}
 	}
 	float alpha = bgCol.w;
 	bgCol = UI::HSV(hsvBg.x, hsvBg.y, hsvBg.z);
@@ -73,7 +80,7 @@ void displayPbBar() {
 	vec2 firstLoc = vec2(width/2-(SettingHandler::XSize+18),yPos);
 	vec2 secondLoc = vec2(width/2+(SettingHandler::XSize+18),yPos);
 
-	if (UI::IsOverlayShown() == true) {
+	if (UI::IsOverlayShown() == true && SettingHandler::CustomizationEnabled) {
 		bool rbY = RenderBoxCentered(secondLoc + vec2(25,0), vec2(14,30), vec4(1,1,1,1));
 		if (rbY && UI::IsMouseClicked()) {
 			yDragStarted = true;
@@ -168,7 +175,7 @@ void displayPbBar() {
 		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(int(medalGoals[0].Time), true), c1, vec4(0,0,0,0.5));
 		cpos += 24;
 	}
-	if (bs1 && int(medalGoals[1].Time) <= 0) {
+	if (bs1 && int(medalGoals[1].Time) <= 0 && int(medalGoals[0].Time) != 999999999) {
 		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(currentPb - int(medalGoals[0].Time), true), c1, vec4(0,0,0,0.5));
 		cpos += 24;
 	}
