@@ -37,6 +37,27 @@ void SaveSettings() {
     JsonLoader::SaveDictionaryToFile("Settings.json", jsonSettings);
 }
 
+void ClampSettings() {
+    int width = Display::GetWidth();
+    int height = Display::GetHeight();
+    if (height > 0) {
+		YPosition = Math::Clamp(YPosition, 0, height);
+	}
+	if (width > 0) {
+		XSize = Math::Clamp(XSize, -1, width/2-65);
+	}
+}
+
+void RenderButtonSetting(const string settingName, const string name, const int num, const float color) {
+    float b0 = ((int(jsonSettings[settingName]) == num) ? (0.3) : (0));
+    UI::PushID(settingName+name);
+    if (UI::ButtonColored(name, color, b0, b0)) {
+        jsonSettings[settingName] = num;
+        SaveSettings();
+    }
+    UI::PopID();
+}
+
 [SettingsTab name="Medals"]
 void RenderMedalSelection() {
     if (UI::Button("Reset to default")) {
@@ -59,41 +80,18 @@ void RenderMedalSelection() {
                 jsonSettings["mdl_"+itemName] = 2;
             }
         }
-        int setting = int(jsonSettings["mdl_"+itemName]);
-        float b0 = ((setting == 0) ? (0.3) : (0));
-        float b1 = ((setting == 1) ? (0.3) : (0));
-        float b2 = ((setting == 2) ? (0.3) : (0));
-        float b3 = ((setting == 3) ? (0.3) : (0));
-        UI::PushID("E"+i);
-        if (UI::ButtonColored("\\$0f0Enabled", 0.4f, b0, b0)) {
-           jsonSettings["mdl_"+itemName] = 0;
-           SaveSettings();
-        }
-        UI::PopID();
-        UI::PushID("D"+i);
+        string settingName = "mdl_"+itemName;
+        int setting = int(jsonSettings[settingName]);
+        RenderButtonSetting(settingName, "\\$0f0Enabled", 0, 0.4f);
         UI::SameLine();
-        if (UI::ButtonColored("\\$f00Disabled", 0, b1, b1)) {
-            jsonSettings["mdl_"+itemName] = 1;
-            SaveSettings();
-        }
-        UI::PopID();
-        UI::PushID("A"+i);
+        RenderButtonSetting(settingName, "\\$f00Disabled", 1, 0);
         UI::SameLine();
-        if (UI::ButtonColored("\\$990Ahead", 0.15f, b2, b2)) {
-            jsonSettings["mdl_"+itemName] = 2;
-            SaveSettings();
-        }
+        RenderButtonSetting(settingName, "\\$990Ahead", 2, 0.15f);
         UI::SetItemTooltip("Only shows if you have \\$0f0already\\$fff achieved the medal.");
-        UI::PopID();
-         UI::PushID("B"+i);
         UI::SameLine();
-        if (UI::ButtonColored("\\$990Behind", 0.15f, b3, b3)) {
-            jsonSettings["mdl_"+itemName] = 3;
-            SaveSettings();
-        }
-         UI::SetItemTooltip("Only shows if you have \\$f00not\\$fff achieved the medal.");
-        UI::PopID();
-         UI::SameLine();
+        RenderButtonSetting(settingName, "\\$990Behind", 3, 0.15f);
+        UI::SetItemTooltip("Only shows if you have \\$f00not\\$fff achieved the medal.");
+        UI::SameLine();
         UI::Text(item);
         UI::SameLine();
         UI::Text(itemName);
