@@ -112,14 +112,14 @@ void RenderMedalSelection() {
 
         RenderButtonSetting(settingName+"_bar", "\\$0ffBar Display", (barSetting == 0) ? 1 : 0, 0.55f, 1);
 
-        UI::SetItemTooltip("Only works if the time is in between the two visible times, and is not set as enabled.");
+        UI::SetItemTooltip("Only works if the time is in between the two visible times. For this to happen, it can not be enabled.");
         UI::SameLine();
         UI::Text(item);
         UI::SameLine();
         UI::Text(itemName);
 	}
     UI::Text("\\$999" + Icons::InfoCircle + " Get Champion Medals, Warrior Medals, and Map Info for all times.");
-     UI::Text("\\$999" + Icons::InfoCircle + " Bar Display is used when the time is in between the two visible times, and is not set as enabled.");
+     UI::Text("\\$999" + Icons::InfoCircle + " Bar Display is used when the time is in between the two visible times. For this to happen, it can not be enabled.");
 }
 
 }
