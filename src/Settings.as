@@ -22,6 +22,9 @@ RWT ReloadWRTime = RWT::Normal;
 [Setting name="YPosition" category="Display"]
 int YPosition = 60;
 
+[Setting name="XSize" category="Display"]
+int XSize = 100;
+
 void InitSettings() {
     
 }
@@ -36,13 +39,23 @@ void SaveSettings() {
 
 [SettingsTab name="Medals"]
 void RenderMedalSelection() {
+    if (UI::Button("Reset to default")) {
+        auto keys = jsonSettings.GetKeys();
+        for (uint i = 0; i < keys.Length; i++) {
+            auto itemName = keys[i];
+            if (itemName.Contains("mdl_")) {
+                jsonSettings.Delete(itemName);
+            }
+        }
+        SaveSettings();
+    }
     for (uint i = 0; i < StatHandler::possibleMedals.GetKeys().Length; i++) {
 
 		auto itemName = StatHandler::possibleMedals.GetKeys()[i];
 		auto item = string(StatHandler::possibleMedals[itemName]);
         if (! jsonSettings.Exists("mdl_"+itemName)) {
             jsonSettings["mdl_"+itemName] = 0;
-            if (itemName == "Worst Time") {
+            if (string(itemName) == "Worst Time") {
                 jsonSettings["mdl_"+itemName] = 2;
             }
         }
@@ -85,6 +98,7 @@ void RenderMedalSelection() {
         UI::SameLine();
         UI::Text(itemName);
 	}
+    UI::Text("\\$999" + Icons::InfoCircle + " Get Champion Medals, Warrior Medals, and Map Info for all times.");
 }
 
 }
