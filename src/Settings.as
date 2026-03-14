@@ -7,7 +7,7 @@ namespace SettingHandler {
 
 dictionary jsonSettings = {};
 
-[Setting name="Enabled Topbar" category="Display"]
+[Setting name="Enabled Bar" category="Display"]
 bool Enabled = true;
 
 [Setting name="Hide Customization In Menu" category="Display"]
@@ -24,10 +24,6 @@ int YPosition = 60;
 
 [Setting name="XSize" category="Display"]
 int XSize = 100;
-
-void InitSettings() {
-    
-}
 
 void LoadSettings() {
     jsonSettings = JsonLoader::JsonToDictionary("Settings.json");
