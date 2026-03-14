@@ -40,6 +40,9 @@ vec2 RenderTextBoxCentered(const vec2 pos, const string text, const vec4 txCol, 
 	return boxBounds;
 }
 
+void renderCustomization() {
+}
+
 void displayPbBar() {
 	auto app = cast<CTrackMania>(GetApp());
 	auto track = app.RootMap;
@@ -116,12 +119,6 @@ void displayPbBar() {
 		RenderBoxCentered(firstLoc - vec2(39,6), vec2(10,3), vec4(0,0,0,1));
 		RenderBoxCentered(firstLoc - vec2(42.5,3), vec2(3,5), vec4(0,0,0,1));
 		RenderBoxCentered(firstLoc - vec2(35.5,-3), vec2(3,5), vec4(0,0,0,1));
-	}
-	if (Display::GetHeight() > 0) {
-		SettingHandler::YPosition = Math::Clamp(SettingHandler::YPosition, 0, Display::GetHeight());
-	}
-	if (width > 0) {
-		SettingHandler::XSize = Math::Clamp(SettingHandler::XSize, -1, width/2-65);
 	}
 
 	
@@ -204,6 +201,7 @@ void Main() {
 		yield();
 		StatHandler::UpdateMedals();
 		StatHandler::UpdateCurrentPb();
+		SettingHandler::ClampSettings();
 	}
 }
 
