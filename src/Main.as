@@ -32,15 +32,20 @@ bool RenderBoxCentered(const vec2 pos, const vec2 size, const vec4 color, const 
 	return UI::IsMouseHoveringRect(pos-(size/2), pos+(size/2), false);
 }
 
-vec2 RenderTextBoxCentered(const vec2 pos, const string text, const vec4 txCol, const vec4 bgCol) {
+vec2 RenderTextBoxCentered(const vec2 pos, const string text, const vec4 txCol, vec4 bgCol) {
 	vec2 tbounds = nvg::TextBounds(text);
 	vec2 boxBounds = vec2(tbounds.x+6,24);
+	vec3 txColBg = UI::ToHSV(txCol.x, txCol.y, txCol.z);
+	vec3 hsvBg = UI::ToHSV(bgCol.x, bgCol.y, bgCol.z);
+	if (txColBg.z < 0.3 && hsvBg.z < 0.3) {
+		hsvBg.z += 0.7;
+	}
+	float alpha = bgCol.w;
+	bgCol = UI::HSV(hsvBg.x, hsvBg.y, hsvBg.z);
+	bgCol.w = alpha;
 	RenderBoxCentered(pos, boxBounds, bgCol);
 	RenderTextCentered(pos, text, txCol);
 	return boxBounds;
-}
-
-void renderCustomization() {
 }
 
 void displayPbBar() {
@@ -78,6 +83,9 @@ void displayPbBar() {
 				startYDrag = SettingHandler::YPosition;
 			}
 			SettingHandler::YPosition = startYDrag+int(UI::GetMouseDragDelta().y);
+			if (Math::Abs(startYDrag-60) > 8 && Math::Abs(SettingHandler::YPosition-60) < 4) {
+				SettingHandler::YPosition = 60;
+			}
 		} else {
 			startYDrag = -1;
 			yDragStarted = false;
@@ -91,6 +99,9 @@ void displayPbBar() {
 				startXDrag = SettingHandler::XSize;
 			}
 			SettingHandler::XSize = startXDrag-int(UI::GetMouseDragDelta().x);
+			if (Math::Abs(startXDrag-100) > 8 && Math::Abs(SettingHandler::XSize-100) < 4) {
+				SettingHandler::XSize = 100;
+			}
 		} else {
 			startXDrag = -2;
 			xDragStarted = false;
@@ -119,6 +130,15 @@ void displayPbBar() {
 		RenderBoxCentered(firstLoc - vec2(39,6), vec2(10,3), vec4(0,0,0,1));
 		RenderBoxCentered(firstLoc - vec2(42.5,3), vec2(3,5), vec4(0,0,0,1));
 		RenderBoxCentered(firstLoc - vec2(35.5,-3), vec2(3,5), vec4(0,0,0,1));
+	}
+	SettingHandler::ClampSettings();
+	if (xDragStarted) {
+		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Icons::CaretLeft+" "+SettingHandler::XSize, vec4(0,0,0,1), vec4(1,1,1,1));
+		cpos += 24;
+	}
+	if (yDragStarted) {
+		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Icons::CaretDown+" "+SettingHandler::YPosition, vec4(0,0,0,1), vec4(1,1,1,1));
+		cpos += 24;
 	}
 
 	
@@ -201,7 +221,6 @@ void Main() {
 		yield();
 		StatHandler::UpdateMedals();
 		StatHandler::UpdateCurrentPb();
-		SettingHandler::ClampSettings();
 	}
 }
 
