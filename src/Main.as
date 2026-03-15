@@ -1,4 +1,3 @@
-array<PMedal> times = {};
 array<PMedal> allTimes = {};
 int currentPb = 0;
 int wr_time = -2;
@@ -13,6 +12,8 @@ int startXDrag = -1;
 bool xDragStarted = false;
 
 bool unbeatenAt = false;
+
+
 
 
 
@@ -38,16 +39,16 @@ vec2 RenderTextBoxCentered(const vec2 pos, const string text, vec4 txCol, vec4 b
 	vec2 boxBounds = vec2(tbounds.x+6,24);
 
 	if (SettingHandler::AccessableText == true) {
-		bgCol = vec4(Math::Abs(txCol.x-1),Math::Abs(txCol.y-1),Math::Abs(txCol.z-1),bgCol.w);
+		float prcVisiblity = ((txCol.x*299) + (txCol.y*587) + (txCol.z*114)) / 1000;
+		if (prcVisiblity > 0.18) {
+			bgCol = vec4(0,0,0,bgCol.w);
+		} else {
+			bgCol = vec4(1,1,1,bgCol.w);
+		}
 	}
 
 	vec3 txColBg = UI::ToHSV(txCol.x, txCol.y, txCol.z);
 	vec3 hsvBg = UI::ToHSV(bgCol.x, bgCol.y, bgCol.z);
-	if (SettingHandler::AccessableText == false) {
-		if (txColBg.z < 0.3 && hsvBg.z < 0.3) {
-			hsvBg.z += 0.7;
-		}
-	}
 	float alpha = bgCol.w;
 	bgCol = UI::HSV(hsvBg.x, hsvBg.y, hsvBg.z);
 	bgCol.w = alpha;
@@ -214,7 +215,7 @@ void displayPbBar() {
 			vec4 vcol = visiblePMedals[i].GetColorOfMedal();
 			vec2 vpos = vec2(width/2-SettingHandler::XSize+xPosition,yPos);
 			vcol.w = 0.5;
-			if (currentPb < visiblePMedals[i].Time && SettingHandler::DisplayBarTA) {
+			if (currentPb > 0 && currentPb < visiblePMedals[i].Time && SettingHandler::DisplayBarTA) {
 				vcol.w = 0.1;
 			}
 			if (actualDBS >= 20) {
@@ -225,8 +226,10 @@ void displayPbBar() {
 			if (RenderBoxCentered(vpos, vec2(actualDBS,30), vcol)) {
 				RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(int(visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
 				cpos += 24;
-				RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), (currentPb-visiblePMedals[i].Time > 0 ? "+" : "") + Time::Format(int(currentPb-visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
-				cpos += 24;
+				if (currentPb > 0) {
+					RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), (currentPb-visiblePMedals[i].Time > 0 ? "+" : "") + Time::Format(int(currentPb-visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
+					cpos += 24;
+				}
 			}
 		}
 	}
