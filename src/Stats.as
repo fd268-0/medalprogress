@@ -22,11 +22,12 @@ class PMedal {
     int Order;
     bool BarDisplay;
     float BarDisplayPosition;
+    bool Visible;
 }
 
 namespace StatHandler {
     dictionary possibleMedals = {
-        {"Bronze",("\\$900" + Icons::CircleO)},
+        {"Bronze",("\\$911" + Icons::CircleO)},
         {"Silver",("\\$999" + Icons::CircleO)},
         {"Gold",("\\$fc0" + Icons::DotCircleO)},
         {"Author",("\\$090" + Icons::Circle)},
@@ -37,7 +38,7 @@ namespace StatHandler {
         {"Champion",("\\$f05" + Icons::PlusCircle)},
 #endif
 #if DEPENDENCY_MAPINFO
-        {"Worst Time",("\\$000" + Icons::Minus)},
+        {"Worst Time",("\\$333" + Icons::Minus)},
 #endif
         {"World Record",("\\$00f" + Icons::Trophy)}
     };
@@ -128,19 +129,19 @@ namespace StatHandler {
         PMedal item;
         item.Time = time;
         item.Name = name;
+        item.Visible = true;
         item.BarDisplay = (barDispSetting == 0) ? false : true;
         item.Icon = string(possibleMedals[name]);
-        allTimes.InsertLast(item);
         if (settingForName == 1) {
-            return;
+            item.Visible = false;
         }
         if (settingForName == 2 && fixedCurPb > time) {
-            return;
+            item.Visible = false;
         }
         if (settingForName == 3 && fixedCurPb <= time) {
-            return;
+            item.Visible = false;
         }
-        times.InsertLast(item);
+        allTimes.InsertLast(item);
     }
 
 
@@ -154,7 +155,6 @@ namespace StatHandler {
                 lastWrUpdate = Time::get_Now();
             } 
             auto mapInfo = track.MapInfo;
-            times = {};
             allTimes = {};
             if (wr_time > 0) {
                 //times.InsertLast({{"Icon", "\\$00f" + Icons::Trophy},{"Time", wr_time}});
@@ -183,7 +183,7 @@ namespace StatHandler {
             wr_time = -2;
             unbeatenAt = false;
             lastPb = -2;
-            times = {};
+            allTimes = {};
         }
     }
 
@@ -210,15 +210,18 @@ namespace StatHandler {
         nextPbMedal.Time = 0;
         nextPbMedal.Icon = "\\$000";
         int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
-        for (uint i = 0; i < times.Length; i++) {
-            if (fixedCurPb <= int(times[i].Time)) {
-                if (int(times[i].Time) <= int(curPbMedal.Time)) {
-                    curPbMedal = times[i];
+        for (uint i = 0; i < allTimes.Length; i++) {
+            if (allTimes[i].Visible == false) {
+                continue;
+            }
+            if (fixedCurPb <= int(allTimes[i].Time)) {
+                if (int(allTimes[i].Time) <= int(curPbMedal.Time)) {
+                    curPbMedal = allTimes[i];
                 }
             }
-            if (fixedCurPb > int(times[i].Time)) {
-                if (int(times[i].Time) > int(nextPbMedal.Time)) {
-                    nextPbMedal = times[i];
+            if (fixedCurPb > int(allTimes[i].Time)) {
+                if (int(allTimes[i].Time) > int(nextPbMedal.Time)) {
+                    nextPbMedal = allTimes[i];
                 }
             }
         }
