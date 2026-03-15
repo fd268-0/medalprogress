@@ -93,7 +93,8 @@ void displayPbBar() {
 		array<PMedal> invisibleMedalGoals = StatHandler::GetCurPbMedal(true);
 		vec4 ic1 = invisibleMedalGoals[0].GetColorOfMedal();
 		vec4 ic2 = invisibleMedalGoals[1].GetColorOfMedal();
-		lerpVec = Math::Lerp(ic1,ic2,l);
+		float l2 = ((float(currentPb) - float(invisibleMedalGoals[0].Time)) / (float(invisibleMedalGoals[1].Time) - float(invisibleMedalGoals[0].Time)));
+		lerpVec = Math::Lerp(ic1,ic2,l2);
 	} else if (SettingHandler::ProgressBarColor == PROGRESSTYPE::AchievedBarDisplayColor) {
 		array<PMedal> invisibleMedalGoals = StatHandler::GetCurPbMedal(true);
 		lerpVec = invisibleMedalGoals[0].GetColorOfMedal();
