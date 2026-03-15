@@ -26,7 +26,7 @@ class PMedal {
 }
 
 namespace StatHandler {
-    dictionary possibleMedals = {
+    const dictionary possibleMedalsDefault = {
         {"Bronze",("\\$911" + Icons::CircleO)},
         {"Silver",("\\$999" + Icons::CircleO)},
         {"Gold",("\\$fc0" + Icons::DotCircleO)},
@@ -43,6 +43,26 @@ namespace StatHandler {
         {"World Record",("\\$00f" + Icons::Trophy)}
     };
 
+    dictionary possibleMedals = {};
+
+    void UpdatePossibleMedals() {
+        possibleMedals = {};
+        for (uint i = 0; i < possibleMedalsDefault.GetKeys().Length; i++) {
+            string itemName = possibleMedalsDefault.GetKeys()[i];
+            string item = string(possibleMedalsDefault[itemName]);
+            string subColor = item.SubStr(0,5);
+            string subIcon = item.SubStr(5);
+            string iconText = string(SettingHandler::jsonSettings["txt_"+itemName]);
+             string iconColor = string(SettingHandler::jsonSettings["txt_"+itemName+"_clr"]);
+            if (iconText != "") {
+                subIcon = SettingHandler::GetIconForName(iconText);
+            }
+            if (iconColor != "" && iconColor.Length == 3) {
+                subColor = "\\$" + iconColor;
+            }
+            possibleMedals[itemName] = subColor + subIcon;
+        }
+    }
 
     int getTimeAtPos(const int position) {
         if (position > 10000 || position < 1) {
@@ -100,8 +120,9 @@ namespace StatHandler {
     bool UpdateCurrentPb() {
         auto app = cast<CTrackMania>(GetApp());
         auto track = app.RootMap;
+        auto editor = app.Editor;
         auto network = cast<CTrackManiaNetwork>(app.Network);
-        if (network.ClientManiaAppPlayground !is null && track !is null) {
+        if (network.ClientManiaAppPlayground !is null && track !is null && editor is null) {
             auto scoreMgr = network.ClientManiaAppPlayground.ScoreMgr;
             auto userMgr = network.ClientManiaAppPlayground.UserMgr;
             MwId userId;
@@ -123,6 +144,9 @@ namespace StatHandler {
     }
 
     void AddItemToTime(const string name, const int time) {
+        if (! possibleMedals.Exists(name)) {
+            return;
+        }
          int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
         int settingForName = int(SettingHandler::jsonSettings["mdl_"+name]);
         int barDispSetting = int(SettingHandler::jsonSettings["mdl_"+name+"_bar"]);
@@ -202,7 +226,7 @@ namespace StatHandler {
         }
         return visiblePMedals;
     }
-    array<PMedal> GetCurPbMedal() {
+    array<PMedal> GetCurPbMedal(const bool&in countInvisible = false) {
         PMedal curPbMedal;
         curPbMedal.Time = 999999999;
         curPbMedal.Icon = "\\$000";
@@ -211,7 +235,7 @@ namespace StatHandler {
         nextPbMedal.Icon = "\\$000";
         int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
         for (uint i = 0; i < allTimes.Length; i++) {
-            if (allTimes[i].Visible == false) {
+            if (allTimes[i].Visible == false && countInvisible == false) {
                 continue;
             }
             if (fixedCurPb <= int(allTimes[i].Time)) {
