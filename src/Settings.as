@@ -16,6 +16,14 @@ enum CONFLICTHANDLE {
 	Move,
     Scale,
 }
+
+enum BARANCHOR {
+    Left,
+    Centered,
+    Right,
+}
+
+
 namespace SettingHandler {
 
 dictionary jsonSettings = {};
@@ -55,13 +63,19 @@ int XSize = 100;
 [Setting name="Progress Bar Color" category="Display"]
 PROGRESSTYPE ProgressBarColor = PROGRESSTYPE::NormalLerp;
 
-[Setting name="Bar Medal Display Size" category="Display" description="Size of the bars from the Bar Display setting in Medals."]
+[Setting name="Opacity" category="Bar Display" min=0 max=1]
+float DisplayOpacity = 1;
+
+[Setting name="Bar Display Size" category="Bar Display" description="Size of the bars from the Bar Display setting in Medals."]
 int DisplayBarSize = 5;
 
-[Setting name="Bar Medal Display Overlap Handling" category="Display" description="Handle visual display conflicts."]
+[Setting name="Overlap Handling" category="Bar Display" description="Handle visual display conflicts."]
 CONFLICTHANDLE OverlapHandling = CONFLICTHANDLE::DoNothing;
 
-[Setting name="Bar Medal Display Make Achieved Faint" category="Display" description="Makes achieved times from the Bar Display show more faint then non-achieved."]
+[Setting name="Anchor Position" category="Bar Display" description="Where the time on the progress is in relation to the display."]
+BARANCHOR DisplayBarAnchor = BARANCHOR::Left;
+
+[Setting name="Make Achieved Faint" category="Bar Display" description="Makes achieved times from the Bar Display show more faint then non-achieved."]
 bool DisplayBarTA = true;
 
 string GetIconForName(const string name) {
@@ -101,6 +115,16 @@ void ResetSettings(const string&in contains = "") {
         }
     }
     SaveSettings();
+}
+
+bool HasBarDisplayActive() {
+    for (uint i = 0; i < allTimes.Length; i++) {
+		auto item = allTimes[i];
+        if (item.BarDisplay == true) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void UsePreset(const dictionary preset) {
@@ -181,19 +205,22 @@ void RenderMedalSelection() {
         }
         UI::SameLine();
         UI::Text(itemName);
-        
+
         // EDIT ICON COLOR AND NAME
         UI::SameLine();
         UI::PushID(settingName+"_pncl");
         bool hsEditOpen = bool(tempSettings[settingName+"_edit"]);
         if (UI::ButtonColored(Icons::Pencil, 0.7f, hsEditOpen ? 0.5 : 0, 0.13)) {
-            tempSettings[settingName+"_edit"] = !bool(tempSettings[settingName+"_edit"]);
+            tempSettings = {};
+            tempSettings[settingName+"_edit"] = !hsEditOpen;
         }
         UI::PopID();
         if (hsEditOpen) {
             bool changedName = false;
             bool changedClr = false;
-            UI::Text(Icons::Pencil+" Input custom icon for " + itemName + " \\$999(i.e. Circle)");
+            UI::Text(Icons::Pencil+" Input custom icon for " + itemName + " \\$999(i.e. Circle)   •");
+            UI::SameLine();
+            UI::TextLinkOpenURL("Icons", "https://openplanet.dev/docs/reference/icons");
             UI::PushID(settingName+"_edit");
             jsonSettings["txt_"+itemName] = UI::InputText("", iconText, changedName);
             UI::PopID();
@@ -215,7 +242,8 @@ void RenderMedalSelection() {
                 }
                 UI::EndChild();
             }
-            UI::Text(Icons::Pencil+" Input custom icon color for " + itemName + " \\$999(i.e. 19f)");
+            IconAutofill = UI::Checkbox("Display Icon Autofill", IconAutofill);
+            UI::Text(Icons::Pencil+" Input custom icon color for " + itemName + " \\$999(i.e. 19f, ed1 [RGB])");
             string iconColor = string(jsonSettings["txt_"+itemName+"_clr"]);
             UI::PushID(settingName+"_editClr");
             jsonSettings["txt_"+itemName+"_clr"] = UI::InputText("", iconColor, changedClr).SubStr(0,3);
@@ -248,7 +276,6 @@ void RenderMedalSelection() {
         });
     }
     UI::Separator();
-    IconAutofill = UI::Checkbox("Display Icon Autofill", IconAutofill);
 
 }
 
