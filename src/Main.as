@@ -4,6 +4,8 @@ int wr_time = -2;
 int lastPbUpdate = -1000;
 int lastWrUpdate = -1000;
 int lastPb = 0;
+SCORETYPE mapType = SCORETYPE::TimeAttack;
+
 
 int startYDrag = -1;
 bool yDragStarted = false;
@@ -73,8 +75,13 @@ void displayPbBar() {
 	nvg::FontSize(20);
 	array<PMedal> medalGoals = StatHandler::GetCurPbMedal();
 	float delta = float(currentPb) - float(medalGoals[1].Time);
-	float l = ((float(currentPb) - float(medalGoals[0].Time)) / (float(medalGoals[1].Time) - float(medalGoals[0].Time)));
-	if (currentPb <= 0) {
+	float m0dif = (float(currentPb) - float(medalGoals[0].Time));
+	float m1dif = (float(medalGoals[1].Time) - float(medalGoals[0].Time));
+	float l = 1;
+	if (m1dif != 0) {
+		l = m0dif / m1dif;
+	}
+	if (currentPb < 0) {
 		l = 0;
 	}
 	int cpos = 0;
@@ -177,11 +184,11 @@ void displayPbBar() {
 	}
 
 	
-	// STOP RENDER IF NOT TM_RACE OR IN EDITOR
+	// STOP RENDER IF TM_STUNT OR IN EDITOR
 	if ((track !is null || UI::IsOverlayShown() == true) && SettingHandler::Enabled == true) {
 		if (track !is null) {
 			auto challengeParams = track.ChallengeParameters;
-			if ((! string(challengeParams.MapType).Contains('TM_Race')) || editor !is null) {
+			if (string(challengeParams.MapType).Contains("TM_Stunt") || editor !is null) {
 				if (SettingHandler::Enabled == true && UI::IsOverlayShown() == true) {
 					RenderBoxCentered(vec2(width/2,yPos), vec2((SettingHandler::XSize*2)+72,36), vec4(0,0,0,0.5));
 				}
@@ -195,63 +202,66 @@ void displayPbBar() {
 	}
 	// SIZE OF THE FIRST MEDAL
 	vec2 firstSize = vec2(30,30);
-	if (int(medalGoals[1].Time) <= 0) {
+	if (int(medalGoals[1].Time) < 0) {
 		firstLoc = vec2(width/2,yPos);
 		firstSize = vec2((SettingHandler::XSize*2)+66,30);
 	}
 	// RENDER FIRST MEDAL
 	bool bs1 = RenderBoxCentered(firstLoc, firstSize, vec4(c1.x,c1.y,c1.z,0.5));
 	if (bs1 && int(medalGoals[0].Time) != 999999999) {
-		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(int(medalGoals[0].Time), true), c1, vec4(0,0,0,0.5));
+		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), StatHandler::FormatInt(int(medalGoals[0].Time), mapType), c1, vec4(0,0,0,0.5));
 		cpos += 24;
 	}
-	if (bs1 && int(medalGoals[1].Time) <= 0 && int(medalGoals[0].Time) != 999999999) {
-		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(currentPb - int(medalGoals[0].Time), true), c1, vec4(0,0,0,0.5));
+	if (bs1 && int(medalGoals[1].Time) < 0 && int(medalGoals[0].Time) != 999999999) {
+		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), StatHandler::FormatInt(currentPb - int(medalGoals[0].Time), mapType), c1, vec4(0,0,0,0.5));
 		cpos += 24;
 	}
 	RenderTextCentered(firstLoc, Text::StripOpenplanetFormatCodes(string(medalGoals[0].Icon)),  c1);
 	// RENDER SECOND MEDAL
-	if (int(medalGoals[1].Time) > 0) {
+	if (int(medalGoals[1].Time) >= 0) {
 		if (RenderBoxCentered(secondLoc, vec2(30,30), vec4(c2.x,c2.y,c2.z,0.5))) {
-			RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(int(medalGoals[1].Time), true), c2, vec4(0,0,0,0.5));
+			RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), StatHandler::FormatInt(int(medalGoals[1].Time), mapType), c2, vec4(0,0,0,0.5));
 			cpos += 24;
 		}
 	}
 	RenderTextCentered(secondLoc, Text::StripOpenplanetFormatCodes(string(medalGoals[1].Icon)),  c2);
 	// RENDER PROGRESS BAR
-	if (int(medalGoals[1].Time) > 0) {
+	if (int(medalGoals[1].Time) >= 0) {
 		if (l*(SettingHandler::XSize*2) > 1) {
 			RenderBoxCentered(vec2(width/2-SettingHandler::XSize+l*SettingHandler::XSize,yPos), vec2(l*(SettingHandler::XSize*2),30), vec4(lerpVec.x,lerpVec.y,lerpVec.z,0.5));
 		}
 	}
 	bool bsr = RenderBoxCentered(vec2(width/2,yPos), vec2((SettingHandler::XSize*2),30), vec4(1,1,1,0));
-	if (bsr && currentPb > 0 && int(medalGoals[1].Time) > 0) {
-		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), "+" + Time::Format(int(delta), true), lerpVec, vec4(0,0,0,0.5));
+	if (bsr && currentPb >= 0 && int(medalGoals[1].Time) >= 0) {
+		RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), "+" + StatHandler::FormatInt(int(delta), mapType), lerpVec, vec4(0,0,0,0.5));
 		cpos += 24;
 	}
 	// RENDER BAR DISPLAYS
 	array<PMedal> visiblePMedals = StatHandler::GetVisiblePMedals();
 	int actualDBS = Math::Min(SettingHandler::DisplayBarSize, SettingHandler::XSize);
 	if (actualDBS > 0 && visiblePMedals.Length > 0) {
+		// CONFLICT HANDLING
 		if (SettingHandler::OverlapHandling != CONFLICTHANDLE::DoNothing) {
 			for (int i = 0; i < int(visiblePMedals.Length); i++) {
 				
 				if (i > 0 && (visiblePMedals[i-1].GetBarPosition()-visiblePMedals[i].GetBarPosition()) < actualDBS) {
 					if (SettingHandler::OverlapHandling == CONFLICTHANDLE::Move) {
-						visiblePMedals[i].SetBarPosition(int(visiblePMedals[i-1].GetBarPosition())-actualDBS);
+						float anchor = StatHandler::GetAnchor();
+						visiblePMedals[i].SetBarPosition(int(float(visiblePMedals[i-1].GetBarPosition())-float(actualDBS)-float(actualDBS*anchor)));
 					} else {
 						actualDBS = int(visiblePMedals[i-1].GetBarPosition()-visiblePMedals[i].GetBarPosition());
 					}
 				}
 			}
 		}
+		// RENDERING
 		for (int i = visiblePMedals.Length-1; i >= 0; i--) {
 			int xPosition = visiblePMedals[i].GetBarPosition();
 			vec4 vcol = visiblePMedals[i].GetColorOfMedal();
 			vec2 vpos = vec2(width/2-SettingHandler::XSize+xPosition,yPos);
-			vcol.w = 0.5;
-			if (currentPb > 0 && currentPb < visiblePMedals[i].Time && SettingHandler::DisplayBarTA) {
-				vcol.w = 0.1;
+			vcol.w = 0.5*SettingHandler::DisplayOpacity;
+			if (currentPb >= 0 && currentPb < visiblePMedals[i].Time && SettingHandler::DisplayBarTA) {
+				vcol.w = vcol.w/5;
 			}
 			if (actualDBS >= 20) {
 				vec4 vtcol = vcol;
@@ -259,17 +269,17 @@ void displayPbBar() {
 				RenderTextCentered(vpos, Text::StripOpenplanetFormatCodes(string(visiblePMedals[i].Icon)), vtcol);
 			}
 			if (RenderBoxCentered(vpos, vec2(actualDBS,30), vcol)) {
-				RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), Time::Format(int(visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
+				RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), StatHandler::FormatInt(int(visiblePMedals[i].Time), mapType), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
 				cpos += 24;
-				if (currentPb > 0) {
-					RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), (currentPb-visiblePMedals[i].Time > 0 ? "+" : "") + Time::Format(int(currentPb-visiblePMedals[i].Time), true), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
+				if (currentPb >= 0) {
+					RenderTextBoxCentered(vec2(width/2,yPos + 30 + cpos), (currentPb-visiblePMedals[i].Time > 0 ? "+" : "") + StatHandler::FormatInt(int(currentPb-visiblePMedals[i].Time), mapType), visiblePMedals[i].GetColorOfMedal(), vec4(0,0,0,0.5));
 					cpos += 24;
 				}
 			}
 		}
 	}
 	// RENDER UNBEATEN AT
-	if (unbeatenAt == true && SettingHandler::UATDisplay) {
+	if (unbeatenAt == true && SettingHandler::UATDisplay && mapType == SCORETYPE::TimeAttack) {
 		string text = "Unbeaten AT";
 		float difr = (float(Time::get_Now()) % 1000)/1000;
 		float difr2 = float(Time::get_Now()) % 5000;
@@ -293,7 +303,7 @@ void displayPbBar() {
 void Main() {
 	SettingHandler::LoadSettings();
 	StatHandler::UpdatePossibleMedals();
-	
+
 	while (true) {
 		if (! Permissions::ViewRecords()) {
 			UI::ShowNotification("Medal Progress", "You can't use Medal Progress because you don't have Standard or Club Access.");
