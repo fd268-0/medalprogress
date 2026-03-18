@@ -1,3 +1,9 @@
+enum SCORETYPE {
+    TimeAttack,
+    Stunt,
+    Platform,
+}
+
 class PMedal {
 
     vec4 GetColorOfMedal() {
@@ -6,7 +12,8 @@ class PMedal {
 
     int GetBarPosition() {
         int actualDBS = Math::Min(SettingHandler::DisplayBarSize, SettingHandler::XSize);
-        int xPosition = int(Math::Min(Math::Max(SettingHandler::XSize*2*BarDisplayPosition, actualDBS/2), SettingHandler::XSize*2-actualDBS/2));
+        float anchor = StatHandler::GetAnchor();
+        int xPosition = int(Math::Min(Math::Max(int(SettingHandler::XSize*2*BarDisplayPosition+float(actualDBS*anchor)), actualDBS/2), SettingHandler::XSize*2-actualDBS/2));
         return xPosition;
     }
 
@@ -15,11 +22,10 @@ class PMedal {
         BarDisplayPosition = xPosition;
     }
 
+    bool BeenUpdated;
     int Time;
-    string Description;
     string Name;
     string Icon;
-    int Order;
     bool BarDisplay;
     float BarDisplayPosition;
     bool Visible;
@@ -45,6 +51,28 @@ namespace StatHandler {
 
     dictionary possibleMedals = {};
 
+    string FormatInt(const int num, const SCORETYPE type) {
+        if (type == SCORETYPE::TimeAttack) {
+            return Time::Format(num, true);
+        } else if (type == SCORETYPE::Stunt) {
+            return ""+num;
+        } else if (type == SCORETYPE::Platform) {
+            return ""+num;
+        }
+        return "";
+    }
+
+    float GetAnchor() {
+        float anchor = 0;
+        if (SettingHandler::DisplayBarAnchor == BARANCHOR::Left) {
+            anchor = 0.5;
+        }
+        if (SettingHandler::DisplayBarAnchor == BARANCHOR::Right) {
+            anchor = -0.5;
+        }
+        return anchor;
+    }
+
     void UpdatePossibleMedals() {
         possibleMedals = {};
         for (uint i = 0; i < possibleMedalsDefault.GetKeys().Length; i++) {
@@ -69,19 +97,20 @@ namespace StatHandler {
             warn("Position invalid for request.");
             return -1;
         }
-        auto app = cast<CTrackMania>(GetApp());
-        auto track = app.RootMap;
-
-        if (app.RootMap is null) {
-            warn("Tried to get a time when no map was avaliable.");
-            return -2;
-        }
 
 
         NadeoServices::AddAudience("NadeoLiveServices");
 
         while (! NadeoServices::IsAuthenticated("NadeoLiveServices")) {
             sleep(100);
+        }
+
+        auto app = cast<CTrackMania>(GetApp());
+        auto track = app.RootMap;
+
+        if (app.RootMap is null) {
+            warn("Tried to get a time when no map was avaliable.");
+            return -2;
         }
 
         auto request = NadeoServices::Get("NadeoLiveServices", 'https://live-services.trackmania.nadeo.live/api/token/leaderboard/group/Personal_Best/map/' + track.MapInfo.MapUid + '/top?length=1&onlyWorld=true&offset=' + (position-1) );
@@ -123,6 +152,8 @@ namespace StatHandler {
         auto editor = app.Editor;
         auto network = cast<CTrackManiaNetwork>(app.Network);
         if (network.ClientManiaAppPlayground !is null && track !is null && editor is null) {
+            auto challengeParams = track.ChallengeParameters;
+            string mapTypeStr = string(challengeParams.MapType);
             auto scoreMgr = network.ClientManiaAppPlayground.ScoreMgr;
             auto userMgr = network.ClientManiaAppPlayground.UserMgr;
             MwId userId;
@@ -131,8 +162,20 @@ namespace StatHandler {
             } else {
                 userId.Value = uint(-1);
             }
-                
-            auto score = scoreMgr.Map_GetRecord_v2(userId, track.MapInfo.MapUid, "PersonalBest", "", "TimeAttack", "");
+            mapType = SCORETYPE::TimeAttack;
+            string scope = "TimeAttack";
+            if (track.MapInfo.TMObjective_NbClones > 0) {
+                scope = "TimeAttackClone";
+            }
+            if (mapTypeStr.Contains("TM_Stunt")) {
+                mapType = SCORETYPE::Stunt;
+                scope = "Stunt";
+            }
+            if (mapTypeStr.Contains("TM_Platform")) {
+                mapType = SCORETYPE::Platform;
+                scope = "Platform";
+            }
+            auto score = scoreMgr.Map_GetRecord_v2(userId, track.MapInfo.MapUid, "PersonalBest", "", scope, "");
             if (int(score) != lastPb) {
                 lastPbUpdate = Time::get_Now();
                 lastPb = score;
@@ -147,11 +190,14 @@ namespace StatHandler {
         if (! possibleMedals.Exists(name)) {
             return;
         }
-         int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
+         int fixedCurPb = (currentPb < 0) ? 999999999 : currentPb;
         int settingForName = int(SettingHandler::jsonSettings["mdl_"+name]);
         int barDispSetting = int(SettingHandler::jsonSettings["mdl_"+name+"_bar"]);
         PMedal item;
         item.Time = time;
+        if (mapType == SCORETYPE::Stunt) {
+            item.Time = 0-time;
+        }
         item.Name = name;
         item.Visible = true;
         item.BarDisplay = (barDispSetting == 0) ? false : true;
@@ -173,14 +219,15 @@ namespace StatHandler {
     void UpdateMedals() {
         auto app = cast<CTrackMania>(GetApp());
         auto track = app.RootMap;
-        if (track !is null) {
-            if ((wr_time == -2 && ((SettingHandler::ReloadWRTime == RWT::Normal) || (SettingHandler::ReloadWRTime == RWT::Once))) || (Time::get_Now()-lastWrUpdate > 120000 && SettingHandler::ReloadWRTime == RWT::Normal)) {
+        auto editor = app.Editor;
+        if (track !is null && editor is null) {
+            if (((wr_time == -2 && ((SettingHandler::ReloadWRTime == RWT::Normal) || (SettingHandler::ReloadWRTime == RWT::Once))) || (Time::get_Now()-lastWrUpdate > 120000 && SettingHandler::ReloadWRTime == RWT::Normal)) && mapType != SCORETYPE::Platform) {
                 wr_time = getTimeAtPos(1);
                 lastWrUpdate = Time::get_Now();
             } 
             auto mapInfo = track.MapInfo;
             allTimes = {};
-            if (wr_time > 0) {
+            if (wr_time > 0  && mapType != SCORETYPE::Platform) {
                 //times.InsertLast({{"Icon", "\\$00f" + Icons::Trophy},{"Time", wr_time}});
                 AddItemToTime("World Record", wr_time);
             }
@@ -189,14 +236,22 @@ namespace StatHandler {
             AddItemToTime("Gold", mapInfo.TMObjective_GoldTime);
             AddItemToTime("Author", mapInfo.TMObjective_AuthorTime);
 #if DEPENDENCY_WARRIORMEDALS
-            AddItemToTime("Warrior", WarriorMedals::GetWMTime());
+            int warriorTime = WarriorMedals::GetWMTime();
+            if (warriorTime > 0) {
+                AddItemToTime("Warrior", warriorTime);
+            }
 #endif
 #if DEPENDENCY_CHAMPIONMEDALS
-            AddItemToTime("Champion", ChampionMedals::GetCMTime());
+            int championTime = ChampionMedals::GetCMTime();
+            if (championTime > 0) {
+                AddItemToTime("Champion", championTime);
+            }
 #endif
 #if DEPENDENCY_MAPINFO
             auto mapInfoPlg = MapInfo::GetCurrentMapInfo();
-            AddItemToTime("Worst Time", mapInfoPlg.WorstTime);
+            if (mapType == SCORETYPE::TimeAttack) {
+                AddItemToTime("Worst Time", mapInfoPlg.WorstTime);
+            }
 #endif
 
             allTimes.Sort(function(a,b) {
@@ -214,12 +269,13 @@ namespace StatHandler {
     array<PMedal> GetVisiblePMedals() {
         array<PMedal> visiblePMedals = {};
         array<PMedal> curPMedals = GetCurPbMedal();
-        if (curPMedals[1].Time <= 0) {
+        if (curPMedals[1].Time < 0) {
             return {};
         }
         for (uint i = 0; i < allTimes.Length; i++) {
             int barDispSetting = int(SettingHandler::jsonSettings["mdl_"+allTimes[i].Name+"_bar"]);
-            if (allTimes[i].Time < curPMedals[0].Time && allTimes[i].Time > curPMedals[1].Time && barDispSetting == 1) {
+            bool isInBounds = allTimes[i].Time < curPMedals[0].Time && allTimes[i].Time > curPMedals[1].Time;
+            if (isInBounds && barDispSetting == 1) {
                 allTimes[i].BarDisplayPosition = float(allTimes[i].Time - curPMedals[0].Time) / float(curPMedals[1].Time - curPMedals[0].Time);
                 visiblePMedals.InsertLast(allTimes[i]);
             }
@@ -231,9 +287,9 @@ namespace StatHandler {
         curPbMedal.Time = 999999999;
         curPbMedal.Icon = "\\$000";
         PMedal nextPbMedal;
-        nextPbMedal.Time = 0;
+        nextPbMedal.Time = -1;
         nextPbMedal.Icon = "\\$000";
-        int fixedCurPb = (currentPb <= 0) ? 999999999 : currentPb;
+        int fixedCurPb = (currentPb < 0) ? 999999999 : currentPb;
         for (uint i = 0; i < allTimes.Length; i++) {
             if (allTimes[i].Visible == false && countInvisible == false) {
                 continue;
@@ -249,6 +305,7 @@ namespace StatHandler {
                 }
             }
         }
-        return {curPbMedal, nextPbMedal};
+        array<PMedal> medalReturns = {curPbMedal, nextPbMedal};
+        return medalReturns;
     }
 }
