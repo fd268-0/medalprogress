@@ -2,7 +2,7 @@
 name        = "Medal Progress"
 author      = "fd268"
 category    = "Race"
-version     = "0.2.0"
+version     = "0.2.1"
 [script]
 dependencies = [ "NadeoServices" ]
 optional_dependencies = [ "ChampionMedals","WarriorMedals","mapinfo" ]
