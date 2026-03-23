@@ -226,6 +226,9 @@ namespace StatHandler {
                 lastWrUpdate = Time::get_Now();
             } 
             auto mapInfo = track.MapInfo;
+            if (mapInfo is null) {
+                return;
+            }
             allTimes = {};
             if (wr_time > 0  && mapType != SCORETYPE::Platform) {
                 //times.InsertLast({{"Icon", "\\$00f" + Icons::Trophy},{"Time", wr_time}});
